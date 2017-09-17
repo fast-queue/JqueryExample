@@ -7,7 +7,7 @@ Array.prototype.containsId = function(v) {
 	}
 	return false;
 };
-var _URL = "http://tcc-andre.ddns.net/queue/";
+var _URL = "https://fq-api.bovendorp.org/queue/";
 var _APIKEY = "testkeytoeveryone";
 var user = null;
 var queue = null;
