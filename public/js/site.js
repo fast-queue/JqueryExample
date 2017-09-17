@@ -8,7 +8,7 @@ Array.prototype.containsId = function(v) {
 	return false;
 };
 var _URL = "http://tcc-andre.ddns.net/queue/";
-var _APIKEY = "minhavidaeandarporestepais";
+var _APIKEY = "testkeytoeveryone";
 var user = null;
 var queue = null;
 
