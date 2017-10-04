@@ -1,4 +1,4 @@
-Array.prototype.containsId = function(v) {
+Array.prototype.containsId = function (v) {
 	if (v == null)
 		return false;
 	for (var i = 0; i < this.length; i++) {
@@ -24,44 +24,79 @@ function setKey(x) {
 // End editable
 
 function leaveQueue(queueId, userId, cb) {
-	$.ajax({
-		type: "delete",
-		beforeSend: function(request) {
-			request.setRequestHeader("API-KEY", _APIKEY);
-		},
-		url: _URL + queueId + '/players/' + userId,
-		success: function(msg) {
-			cb(null);
-		},
-		error: function(xhr) {
-			cb(xhr)
-		}
-	});
+	getQueue(queueId, (obj) => {
+		if(obj.numPlayers > 0)
+			obj.numPlayers--;
+
+		updateQueue(queueId, obj, (msg) => {
+			console.log("Queue updated", msg);
+		});
+		$.ajax({
+			type: "delete",
+			beforeSend: function (request) {
+				request.setRequestHeader("API-KEY", _APIKEY);
+			},
+			url: _URL + queueId + '/players/' + userId,
+			success: function (msg) {
+				cb(null);
+			},
+			error: function (xhr) {
+				cb(xhr)
+			}
+		});
+	});	
 }
 
-function joinQueue(id, obj, cb) {
+function updateQueue(id, obj, cb) {
 	$.ajax({
-		type: "post",
-		beforeSend: function(request) {
+		type: 'put',
+		beforeSend: function (request) {
 			request.setRequestHeader("API-KEY", _APIKEY);
 			request.setRequestHeader("Content-Type", "application/JSON")
 		},
 		data: JSON.stringify(obj),
-		url: _URL + id + '/players',
-		success: function(msg) {
+		url: _URL + id,
+		success: function (msg) {
 			cb(msg);
 		}
 	});
 }
 
+function joinQueue(id, obj, cb) {
+	getQueue(id, (obj) => {
+		if (obj.numPlayers >= obj.maxPlayers) {
+			alert('Maximum players reached!');
+			return;
+		}
+		obj.numPlayers++;
+
+		updateQueue(id, obj, (msg) => {
+			console.log("Queue updated", msg);
+		})
+		$.ajax({
+			type: "post",
+			beforeSend: function (request) {
+				request.setRequestHeader("API-KEY", _APIKEY);
+				request.setRequestHeader("Content-Type", "application/JSON")
+			},
+			data: JSON.stringify(obj),
+			url: _URL + id + '/players',
+			success: function (msg) {
+				cb(msg);
+			}
+		});
+	});
+	
+}
+
 function getQueues(cb) {
 	$.ajax({
 		type: "get",
-		beforeSend: function(request) {
+		beforeSend: function (request) {
 			request.setRequestHeader("API-KEY", _APIKEY);
 		},
 		url: _URL,
-		success: function(msg) {
+		success: function (msg) {
 			cb(msg);
 		}
 	});
@@ -70,11 +105,11 @@ function getQueues(cb) {
 function getQueue(id, cb) {
 	$.ajax({
 		type: "get",
-		beforeSend: function(request) {
+		beforeSend: function (request) {
 			request.setRequestHeader("API-KEY", _APIKEY);
 		},
 		url: _URL + id,
-		success: function(msg) {
+		success: function (msg) {
 			cb(msg);
 		}
 	});
@@ -83,13 +118,13 @@ function getQueue(id, cb) {
 function addQueue(obj) {
 	$.ajax({
 		type: "post",
-		beforeSend: function(request) {
+		beforeSend: function (request) {
 			request.setRequestHeader("API-KEY", _APIKEY);
 			request.setRequestHeader("Content-Type", "application/JSON")
 		},
 		data: JSON.stringify(obj),
 		url: _URL,
-		success: function(msg) {
+		success: function (msg) {
 			alert("Sala adiconada com sucesso" + JSON.stringify(" " + msg._id));
 		}
 	});
@@ -98,11 +133,11 @@ function addQueue(obj) {
 function getPlayers(id, cb) {
 	$.ajax({
 		type: "get",
-		beforeSend: function(request) {
+		beforeSend: function (request) {
 			request.setRequestHeader("API-KEY", _APIKEY);
 		},
 		url: _URL + id + '/players',
-		success: function(msg) {
+		success: function (msg) {
 			$('.addedPlayers').remove();
 			cb(id, msg)
 		}
@@ -111,7 +146,7 @@ function getPlayers(id, cb) {
 
 function listQueue(msg) {
 	$('.addedQueue').remove();
-	msg.forEach(function(element) {
+	msg.forEach(function (element) {
 		if (!element.name)
 			element.name = "NO-NAME";
 		if (user) {
@@ -120,7 +155,7 @@ function listQueue(msg) {
 					.append($('<tr>').attr('class', "addedQueue")
 						.append($('<td>')
 							.attr('id', element._id)
-							.click(function() {
+							.click(function () {
 								console.log(element._id)
 								getPlayers(element._id, listPlayers);
 							})
@@ -130,7 +165,7 @@ function listQueue(msg) {
 								.append($('<img>')
 									.attr('src', leaveImg)
 									.attr('id', 'find'))
-								.click(function() {
+								.click(function () {
 									leaveRoom(element._id)
 								}))))
 			}
@@ -139,7 +174,7 @@ function listQueue(msg) {
 				.append($('<tr>').attr('class', "addedQueue")
 					.append($('<td>')
 						.attr('id', element._id)
-						.click(function() {
+						.click(function () {
 							console.log(element._id)
 							getPlayers(element._id, listPlayers);
 						})
@@ -149,7 +184,7 @@ function listQueue(msg) {
 							.append($('<img>')
 								.attr('src', enterIMG)
 								.attr('id', 'find'))
-							.click(function() {
+							.click(function () {
 								enterRoom(element._id)
 							}))))
 		}
@@ -167,10 +202,10 @@ function enterRoom(idRoom) {
 	$('#yourQueue').attr('class', 'btn btn-info');
 	$('#yourQueue').attr('text', idRoom);
 
-	getQueue(idRoom, function(msg) {
+	getQueue(idRoom, function (msg) {
 		$('#yourQueueText').text(msg.name);
 	});
-	joinQueue(idRoom, { name: text }, function(msg) {
+	joinQueue(idRoom, { name: text }, function (msg) {
 		user = msg;
 		user.name = text;
 		user.queue = { _id: idRoom }
@@ -190,7 +225,7 @@ function toggleEnterLeave(img, id) {
 			.attr('src', img);
 		$('td#' + id).find('img#find')
 			.unbind('click')
-			.click(function() {
+			.click(function () {
 				leaveRoom(id)
 			});
 	} else {
@@ -198,14 +233,14 @@ function toggleEnterLeave(img, id) {
 			.attr('src', img);
 		$('td#' + id).find('img#find')
 			.unbind('click')
-			.click(function() {
+			.click(function () {
 				enterRoom(id)
 			});
 	}
 }
 
 function leaveRoom(idRoom) {
-	leaveQueue(user.queue._id, user._id, function(err) {
+	leaveQueue(user.queue._id, user._id, function (err) {
 		if (err) {
 			console.log(err);
 			return;
@@ -221,7 +256,7 @@ function leaveRoom(idRoom) {
 }
 
 function listPlayers(roomId, players) {
-		queue = roomId;
+	queue = roomId;
 	if (players.length == 0) {
 		console.log(players);
 		return;
@@ -244,6 +279,5 @@ function addQueueButton() {
 		alert("Insira um nome para a sala");
 		return;
 	}
-	addQueue({ name: text });
+	addQueue({ name: text, maxPlayers: 5, numPlayers: 0 });
 };
-
